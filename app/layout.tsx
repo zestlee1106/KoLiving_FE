@@ -10,9 +10,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <Head />
       <body>
-        <Header type="back" title="Title" right="pencil" />
+        {/* <Header type="back" title="Title" right="pencil" /> */}
         {children}
-        <Nav />
+        {/* <Nav /> */}
       </body>
     </html>
   );
