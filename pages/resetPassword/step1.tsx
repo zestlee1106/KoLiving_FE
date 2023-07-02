@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ResetPasswordLayout from '@/components/layouts/ResetPasswordLayout.tsx';
 import Space from '@/components/Space.tsx';
 import Typography from '@/components/Typography/Typography.tsx';
@@ -18,8 +18,9 @@ export const getStaticProps = async ({ locale }: GetStaticPropsContext) => ({
   },
 });
 
-export default function resetPassword() {
+export default function step1() {
   const { t } = UseTranslation('common');
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [authEmail, setAuthEmail] = useState(false);
 
   const {
@@ -31,7 +32,7 @@ export default function resetPassword() {
 
   const fnAuthEmail = () => {
     console.log('error is ??', errors);
-    !errors.email?.message && setAuthEmail(true);
+    return !errors.email?.message && setAuthEmail(true);
   };
 
   return (
@@ -58,7 +59,7 @@ export default function resetPassword() {
           error={errors.email as FieldError}
         />
       </div>
-      <Button type="submit" onClick={fnAuthEmail} disabled={!watch('email')} size="lg">
+      <Button type="submit" onClick={fnAuthEmail} disabled={!watch('email') || !!errors.email?.message} size="lg">
         Next
       </Button>
       {authEmail && (
@@ -66,14 +67,15 @@ export default function resetPassword() {
           title="Check Your Mail Box"
           content={`A reset link has just been sent to ${getValues('email')}`}
           buttonType="default"
-          hasCloseButton
           buttonName="Resend link"
+          hasCloseButton
+          overlayClose
         />
       )}
     </div>
   );
 }
 
-resetPassword.getLayout = function getLayout(page: React.ReactElement) {
+step1.getLayout = function getLayout(page: React.ReactElement) {
   return <ResetPasswordLayout>{page}</ResetPasswordLayout>;
 };
