@@ -1,7 +1,8 @@
 import React from 'react';
 import LogoBlack from '@/public/icons/logo-black.svg';
 import LogoWhite from '@/public/icons/logo-white.svg';
-import Plus from '@/public/icons/plus.svg';
+// import Plus from '@/public/icons/plus.svg';
+import Plus from '@/public/icons/plus2.svg';
 import Back from '@/public/icons/back.svg';
 import Close from '@/public/icons/close.svg';
 import Pencil from '@/public/icons/pencil.svg';
@@ -14,6 +15,7 @@ interface HeaderProps {
   right?: 'plus' | 'close' | 'pencil';
   logoColor?: 'black' | 'white';
   bgColor?: 'white' | 'transparent';
+  hasButton?: boolean;
   handleButtonClick?: () => void;
 }
 
@@ -25,9 +27,9 @@ const LOGOS = {
 const renderHandler = (type: string | undefined, color: string) => {
   switch (type) {
     case 'plus':
-      return <Plus className={`${color} stroke-[2]`} />;
+      return <Plus className="stroke-r1" />;
     case 'close':
-      return <Close className={`${color} stroke-[2]`} />;
+      return <Close width={24} height={24} className={`${color} stroke-[2]`} />;
     case 'pencil':
       return <Pencil className={`${color} stroke-[2]`} />;
     default:
@@ -42,6 +44,7 @@ export default function Header({
   logoColor = 'black',
   bgColor = 'white',
   handleButtonClick,
+  hasButton = true,
 }: HeaderProps) {
   const strokeColor = bgColor === 'white' ? 'stroke-g7' : 'stroke-g0';
   const Logo = LOGOS[`logo-${logoColor}`];
@@ -67,7 +70,7 @@ export default function Header({
         <div className="text-center pt-[14.5px]">
           <div className="mx-auto" style={{ maxWidth: '100%' }}>
             <div className="flex items-center">
-              <Back className="stroke-g7 stroke-[2] cursor-pointer" onClick={handleClick} />
+              {hasButton && <Back className="stroke-g7 stroke-[2] cursor-pointer" onClick={handleClick} />}
               <Space />
               <div className="font-pretendard font-medium text-[18px]">{title}</div>
               <Space />

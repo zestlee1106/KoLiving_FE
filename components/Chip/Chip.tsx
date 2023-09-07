@@ -1,29 +1,45 @@
-import React, { MouseEvent } from 'react';
+import React, { useEffect, useState, MouseEvent } from 'react';
 import Close from '@/public/icons/close.svg';
 import Typography from '@/components/Typography/Typography.tsx';
 
 interface ChipProps {
   label: string;
   onDelete?: () => void;
+  clicked?: boolean;
+  onChipClick?: (label: string) => void;
 }
 
-/** Node Version 문제로 다시 올려봅니다람쥐... */
-export default function Chip({ label, onDelete }: ChipProps) {
-  const handleDelete = (event: MouseEvent) => {
-    event.preventDefault();
+/** Chip Component 1차 개발 */
+export default function Chip({ label, onDelete, clicked, onChipClick }: ChipProps) {
+  const [fillStroke, setFillStroke] = useState('');
+  const [fillText, setFillText] = useState('');
+  useEffect(() => {
+    setFillStroke(clicked ? 'stroke-r1 stroke-[2]' : '');
+    setFillText(clicked ? 'bg-r1 text-r1' : 'bg-g3 text-g5');
+  }, [clicked]);
+
+  const handleDelete = (e: MouseEvent) => {
+    e.preventDefault();
     if (onDelete) {
       onDelete();
     }
   };
 
+  const onDivClick = () => {
+    onChipClick?.(label);
+  };
+
   return (
-    <div className="inline-flex items-center bg-r1 bg-opacity-10 text-r1 px-3 py-1 text-sm font-semibold mr-2 mb-2">
-      <Typography variant="label" fontStyle="semiBold" font="pretendard" color="r1">
+    <div
+      className={`pl-[12px] pr-[3.75px] inline-flex items-center mr-2 mb-2 bg-opacity-10 py-1 font-semibold ${fillText}`}
+      onClick={onDivClick}
+    >
+      <Typography variant="label" fontStyle="semiBold" font="pretendard" color={clicked ? 'r1' : 'g5'}>
         {label}
       </Typography>
       {onDelete && (
-        <button className="ml-2 focus:outline-none" onClick={handleDelete} aria-label="Delete">
-          <Close />
+        <button className="focus:outline-none" onClick={handleDelete} aria-label="Delete">
+          <Close width={10.5} height={10.5} className="m-[7px] stroke-r1 stroke-[2]" />
         </button>
       )}
     </div>
@@ -31,6 +47,5 @@ export default function Chip({ label, onDelete }: ChipProps) {
 }
 
 Chip.defaultProps = {
-  label: '',
-  onDelete: console.log(),
+  onDelete: () => '',
 };

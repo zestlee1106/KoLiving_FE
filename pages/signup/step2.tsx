@@ -9,8 +9,9 @@ import Input from '@/components/Input/Input.tsx';
 import { FieldError, FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { isValidPassword } from '@/utils/validCheck.ts';
 import Button from '@/components/Button/Button.tsx';
-import Router from 'next/router';
+import Router, { useRouter } from 'next/router';
 import useSignUp from '@/hooks/useSignUp.ts';
+import { postPassword } from '@/api/signup';
 
 export const getStaticProps = async ({ locale }: GetStaticPropsContext) => ({
   props: {
@@ -30,13 +31,24 @@ export default function SignUp() {
   } = useForm({ mode: 'onChange' });
   const { setSignUpData, signUpState } = useSignUp();
   const watchPassword1 = watch('password1', '');
+  const router = useRouter();
+  const { query } = router;
+  const { email } = query;
 
-  const onSubmit: SubmitHandler<FieldValues> = (data) => {
+  const onSubmit: SubmitHandler<FieldValues> = async (data) => {
     setSignUpData({
       password: data.password1,
     });
 
-    Router.push('/signup/step3');
+    try {
+      await postPassword({
+        email: signUpState?.email || (email as string),
+        password: data.password1,
+      });
+      Router.push('/signup/step3');
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => {

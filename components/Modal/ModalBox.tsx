@@ -6,7 +6,6 @@ import useModal from '../../hooks/useModal.ts';
 import useOutSideClick from '../../hooks/useOutSideClick.ts';
 import Button from '../Button/Button.tsx';
 import Header from '../Header/Header.tsx';
-import DefaultLayout from '../layouts/DefaultLayout.tsx';
 
 function Modal({
   children,
@@ -15,6 +14,7 @@ function Modal({
   title = '',
   content = '',
   custom = false,
+  customHeader = false,
   buttonType = 'none',
   handleClose,
   buttonName = '',
@@ -51,17 +51,17 @@ function Modal({
         return (
           <>
             <Button onClick={() => handleClose?.()} disabled size="lg">
-              test
+              {buttonName}
             </Button>
             <Button onClick={() => handleClose?.()} color="r1" size="lg">
-              test
+              {buttonName}
             </Button>
           </>
         );
       case 'outline':
         return (
           <Button onClick={() => handleClose?.()} color="noBg" size="lg">
-            test
+            {buttonName}
           </Button>
         );
       case 'default':
@@ -78,6 +78,14 @@ function Modal({
   const goBack = () => {
     closeModal();
   };
+  const defaultHeader = () => {
+    let result = <Header type="title" title={title} right="close" logoColor="black" handleButtonClick={goBack} />;
+    // TODO 나중에 여기 layoutHeader쪽 Component를 받는 거로 변경
+    if (customHeader) {
+      result = <Header type="back" logoColor="black" bgColor="white" title="Add rooms" handleButtonClick={goBack} />;
+    }
+    return result;
+  };
 
   return size === 'md' ? (
     <div className={styles.overlay}>
@@ -85,7 +93,7 @@ function Modal({
         {hasCloseButton && (
           <div className={styles.close}>
             <button type="button" onClick={onClose}>
-              <Close />
+              <Close width={24} height={24} />
             </button>
           </div>
         )}
@@ -94,7 +102,7 @@ function Modal({
         ) : (
           <div>
             <h2>{title}</h2>
-            <p>{content}</p>
+            <p dangerouslySetInnerHTML={{ __html: content }} />
           </div>
         )}
         {buttonType && buttonType !== 'none' && <div className="mt-[20px] flex gap-x-2">{renderButton()}</div>}
@@ -102,8 +110,10 @@ function Modal({
     </div>
   ) : (
     <div className={styles.full}>
-      <Header type="title" title={title} right="close" logoColor="black" handleButtonClick={goBack} />
-      <div className="mt-[62px] px-[20px] text-g6 text-[16px] font-light">{content}</div>
+      {defaultHeader()}
+      <div className="mt-[62px] px-[20px] text-g6 text-[16px] font-light w-full max-w-[440px] min-w-[320px]">
+        {custom ? children : content}
+      </div>
     </div>
   );
 }

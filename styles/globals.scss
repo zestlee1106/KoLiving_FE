@@ -1,5 +1,14 @@
-input:focus {
+@import '../components/Calendar/custom-calendar.scss';
+
+input:focus,
+button:focus,
+div:focus {
   outline: none;
+  box-shadow: none;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {

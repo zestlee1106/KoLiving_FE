@@ -7,9 +7,10 @@ interface TypographyProps {
   font?: 'poppins' | 'pretendard';
   fontStyle?: 'semiBold' | 'medium' | 'regular';
   color?: string;
+  customClassName?: string;
 }
 
-function Typography({ variant, children, font, fontStyle, color }: TypographyProps) {
+function Typography({ variant, children, font, fontStyle, color, customClassName }: TypographyProps) {
   let className = '';
 
   switch (variant) {
@@ -20,10 +21,10 @@ function Typography({ variant, children, font, fontStyle, color }: TypographyPro
       className = `${styles.title} ${styles[`${fontStyle}`]}`;
       break;
     case 'body':
-      className = `${styles.body} ${styles[`${fontStyle}`]}`;
+      className = `${styles.body} ${styles[`${fontStyle}`]} ${customClassName}`;
       break;
     case 'label':
-      className = `${styles.label} ${styles[`${fontStyle}`]} text-${color}`;
+      className = `${styles.label} ${styles[`${fontStyle}`]} text-${color} ${customClassName} `;
       break;
     default:
       break;
@@ -39,4 +40,5 @@ Typography.defaultProps = {
   variant: 'header',
   fontStyle: 'semibold',
   color: 'text-black',
+  customClassName: '',
 };
