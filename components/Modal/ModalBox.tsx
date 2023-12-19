@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import Close from '@/public/icons/close.svg';
+import Check2 from '@/public/icons/Check2.svg';
 import styles from './Modal.module.scss';
 import { ModalProps } from './ModalContainer.tsx';
 import useModal from '../../hooks/useModal.ts';
@@ -10,6 +11,7 @@ import Header from '../Header/Header.tsx';
 function Modal({
   children,
   hasCloseButton,
+  disabledBtn = false,
   overlayClose,
   title = '',
   content = '',
@@ -17,11 +19,17 @@ function Modal({
   customHeader = false,
   buttonType = 'none',
   handleClose,
+  handleSecondButton,
+  handleCustomEvent,
+  customButtonName,
   buttonName = '',
+  buttonName2 = '',
+  buttonNames = [],
+  hasButton = true,
   size = 'md',
 }: ModalProps) {
   const { closeModal } = useModal();
-
+  const [selectedButtonIndex, setSelectedButtonIndex] = React.useState(-1);
   const modalRef = useRef(null);
 
   const onClose = () => {
@@ -43,6 +51,10 @@ function Modal({
     };
   }, []);
 
+  const handleButtonClick = (index: number) => {
+    setSelectedButtonIndex(index);
+  };
+
   const renderButton = () => {
     switch (buttonType) {
       case 'none':
@@ -50,11 +62,11 @@ function Modal({
       case 'both':
         return (
           <>
-            <Button onClick={() => handleClose?.()} disabled size="lg">
+            <Button onClick={() => handleClose?.()} color="outlined" size="md">
               {buttonName}
             </Button>
-            <Button onClick={() => handleClose?.()} color="r1" size="lg">
-              {buttonName}
+            <Button onClick={() => handleSecondButton?.()} color="r1" size="md">
+              {buttonName2}
             </Button>
           </>
         );
@@ -66,10 +78,22 @@ function Modal({
         );
       case 'default':
         return (
-          <Button onClick={() => handleClose?.()} color="r1" size="lg">
+          <Button onClick={() => handleClose?.()} color="r1" size="lg" disabled={disabledBtn}>
             {buttonName}
           </Button>
         );
+      case 'wrapper':
+        return buttonNames.map((_buttonName, index) => {
+          const isSelected = index === selectedButtonIndex;
+          return (
+            <Button onClick={() => handleButtonClick(index)} color={isSelected ? 'noBg' : 'outlined'} size="lg">
+              <div className={`flex items-center justify-between `}>
+                <span>{_buttonName}</span>
+                {isSelected && <Check2 className="ml-auto" />}
+              </div>
+            </Button>
+          );
+        });
       default:
         return null;
     }
@@ -82,7 +106,7 @@ function Modal({
     let result = <Header type="title" title={title} right="close" logoColor="black" handleButtonClick={goBack} />;
     // TODO 나중에 여기 layoutHeader쪽 Component를 받는 거로 변경
     if (customHeader) {
-      result = <Header type="back" logoColor="black" bgColor="white" title="Add rooms" handleButtonClick={goBack} />;
+      result = <Header type="back" logoColor="black" bgColor="white" title={title} handleButtonClick={goBack} />;
     }
     return result;
   };
@@ -93,7 +117,7 @@ function Modal({
         {hasCloseButton && (
           <div className={styles.close}>
             <button type="button" onClick={onClose}>
-              <Close width={24} height={24} />
+              <Close width={24} height={24} fill="#FF8E00" />
             </button>
           </div>
         )}
@@ -102,10 +126,27 @@ function Modal({
         ) : (
           <div>
             <h2>{title}</h2>
-            <p dangerouslySetInnerHTML={{ __html: content }} />
+            <p
+              className={`${buttonType === 'wrapper' && 'text-r1'} mt-[4px]`}
+              dangerouslySetInnerHTML={{ __html: content }}
+            />
           </div>
         )}
-        {buttonType && buttonType !== 'none' && <div className="mt-[20px] flex gap-x-2">{renderButton()}</div>}
+        {hasButton && (
+          // eslint-disable-next-line react/jsx-no-useless-fragment
+          <>
+            {buttonType && buttonType !== 'none' && buttonType !== 'wrapper' ? (
+              <div className="mt-[20px] flex gap-x-2 items-center justify-center">{renderButton()}</div>
+            ) : (
+              <div className="mt-[10] flex flex-col items-center justify-center space-y-[10px]">
+                {renderButton()}
+                <Button onClick={handleCustomEvent} color="r1" size="lg" _className="mt-[20px] font-semibold">
+                  {customButtonName}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   ) : (

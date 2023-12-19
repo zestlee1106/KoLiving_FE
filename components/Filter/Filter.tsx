@@ -1,74 +1,20 @@
 import React, { useState, useEffect, useCallback, use, useMemo } from 'react';
-import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { GetStaticPropsContext } from 'next';
-import { Toast, Chip, Select, Toggle, Checkbox, Button, Input } from '@/components/index.tsx';
+import { Chip, Select, Toggle, Checkbox, Button, Input } from '@/components/index.tsx';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
 import { GuList, DongList } from '@/public/js/guDongList.ts';
 import toast from 'react-hot-toast';
+import { fetchFurnishings, getRooms } from '@/api/room';
+import { ROOM_TYPE, ROOM_TYPE_KEYS, ROOM_TYPE_LABEL } from '@/public/types/room';
+import { formatDateForAPI } from '@/utils/transform';
+import { isEmpty } from 'lodash-es';
 import styles from './Filter.module.scss';
 import { Option } from '../Select/Select';
 import Calendar from '../Calendar/Calendar';
 
-export const getStaticProps = async ({ locale }: GetStaticPropsContext) => ({
-  props: {
-    ...(await serverSideTranslations(locale as string, ['filter', 'common'])),
-  },
-});
-
-const TYPE_OF_HOUSING = [
-  {
-    value: 'studioChecked',
-    label: 'Studio',
-  },
-  {
-    value: 'bedFlatsChecked',
-    label: '1bed Flats',
-  },
-  {
-    value: 'shareHouseChecked',
-    label: 'Share House',
-  },
-];
-
-const FURNISHING = [
-  {
-    value: 'bedChecked',
-    label: 'Bed',
-  },
-  {
-    value: 'wardrobeChecked',
-    label: 'Wardrobe',
-  },
-  {
-    value: 'tvChecked',
-    label: 'TV',
-  },
-  {
-    value: 'airconditionerChecked',
-    label: 'Airconditioner',
-  },
-  {
-    value: 'heaterChecked',
-    label: 'Heater',
-  },
-  {
-    value: 'washingMachineChecked',
-    label: 'Washing Machine',
-  },
-  {
-    value: 'stoveChecked',
-    label: 'Stove',
-  },
-  {
-    value: 'refregeratorChecked',
-    label: 'Refregerator',
-  },
-  {
-    value: 'doorLockChecked',
-    label: 'Door Lock',
-  },
-];
+const ROOM_TYPE_OPTIONS = Object.entries(ROOM_TYPE).map(([label, value]) => ({
+  label: ROOM_TYPE_LABEL[label as ROOM_TYPE_KEYS],
+  value,
+}));
 
 interface GuDong {
   gu: Option;
@@ -78,17 +24,21 @@ interface GuDong {
 export default function Filter({
   getChildData,
   closeModal,
-  roomsLength,
+  focus,
+  initialData,
 }: {
   getChildData: (data: any) => void;
   closeModal: () => void;
-  roomsLength: number;
+  focus?: number;
+  initialData?: any;
 }) {
-  const { register, handleSubmit, watch, reset } = useForm({ mode: 'onChange' });
+  const { register, handleSubmit, watch, reset, setValue } = useForm({ mode: 'onChange', shouldUnregister: false });
   const [selectedLocations, setSelectedLocations] = useState<GuDong[]>([]);
+  const [count, setCount] = useState(0);
+  const [searchParams, setSearchParams] = useState({});
 
-  const onSubmit: SubmitHandler<FieldValues> = (data) => {
-    getChildData(data);
+  const onSubmit: SubmitHandler<FieldValues> = () => {
+    getChildData(searchParams);
     closeModal();
   };
 
@@ -122,6 +72,29 @@ export default function Filter({
     // 다시 api 요청
   }, [reset]);
 
+  const [furnishings, setFurnishings] = useState<Option[] | null>([]);
+
+  const getFurnishings = async () => {
+    try {
+      const data = await fetchFurnishings();
+
+      if (!data) {
+        return;
+      }
+
+      const mappedFurnishing = data.map((item) => {
+        return {
+          value: item.id,
+          label: item.desc,
+        };
+      });
+
+      setFurnishings(mappedFurnishing);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     if (!dong) return;
 
@@ -151,6 +124,122 @@ export default function Filter({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dong]);
+
+  const [housingChecked, setHousingChecked] = useState<string[]>([]);
+  const handleHousingCheck = (value: string, isChecked: boolean) => {
+    if (isChecked) {
+      setHousingChecked((prev) => [...prev, value]);
+    } else {
+      setHousingChecked((prev) => prev.filter((item) => item !== value));
+    }
+  };
+
+  const [furnishingChecked, setFurnishingChecked] = useState<(string | number)[]>([]);
+  const handleFurnishingCheck = (value: string | number, isChecked: boolean) => {
+    if (isChecked) {
+      setFurnishingChecked((prev) => [...prev, value]);
+    } else {
+      setFurnishingChecked((prev) => prev.filter((item) => item !== value));
+    }
+  };
+
+  const minDeposit = watch('depositMin');
+  const maxDeposit = watch('depositMax');
+  const minMonthlyRent = watch('monthMin');
+  const maxMonthlyRent = watch('monthMax');
+  const dateAvailable = watch('dateAvailable');
+
+  useEffect(() => {
+    if (minMonthlyRent > 20000000) {
+      setValue('monthMin', 20000000);
+    }
+    if (maxMonthlyRent > 20000000) {
+      setValue('monthMax', 20000000);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minMonthlyRent, maxMonthlyRent, setValue]);
+
+  useEffect(() => {
+    if (minDeposit > 500000000) {
+      setValue('depositMin', 500000000);
+    }
+    if (maxDeposit > 500000000) {
+      setValue('depositMax', 500000000);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minDeposit, maxDeposit, setValue]);
+
+  useEffect(() => {
+    const formattedSelectedLocation = selectedLocations.map((item) => item.dong.value);
+
+    if (minDeposit === undefined) {
+      return;
+    }
+
+    const fetchData = async () => {
+      setSearchParams({
+        locationIds: formattedSelectedLocation.join(', '),
+        locations: selectedLocations,
+        minDeposit,
+        maxDeposit,
+        minMonthlyRent,
+        maxMonthlyRent,
+        types: housingChecked.join(', '),
+        housingChecked,
+        furnishingChecked,
+        furnishingTypes: furnishingChecked.join(', '),
+        ...(dateAvailable ? { availableDate: formatDateForAPI(dateAvailable) } : {}),
+      });
+      const data = await getRooms({
+        locationIds: formattedSelectedLocation.join(', '),
+        minDeposit,
+        maxDeposit,
+        minMonthlyRent,
+        maxMonthlyRent,
+        types: housingChecked.join(', '),
+        furnishingTypes: furnishingChecked.join(', '),
+        ...(dateAvailable ? { availableDate: formatDateForAPI(dateAvailable) } : {}),
+      });
+      if (data) {
+        setCount(data.totalElements);
+      }
+    };
+
+    fetchData();
+  }, [
+    selectedLocations,
+    minDeposit,
+    maxDeposit,
+    minMonthlyRent,
+    maxMonthlyRent,
+    dateAvailable,
+    housingChecked,
+    furnishingChecked,
+  ]);
+
+  const resetSearchParams = () => {
+    if (!isEmpty(initialData)) {
+      setSelectedLocations(initialData.locations);
+      setValue('depositMin', initialData.minDeposit);
+      setValue('depositMax', initialData.maxDeposit);
+      setValue('monthMin', initialData.minMonthlyRent);
+      setValue('monthMax', initialData.maxMonthlyRent);
+      setValue('dateAvailable', initialData.availableDate);
+      initialData.housingChecked.forEach((item: string) => {
+        setValue(`${item}`, true);
+        setHousingChecked((prev) => [...prev, item]);
+      });
+      initialData.furnishingChecked.forEach((item: string) => {
+        setValue(`${item}`, true);
+        setFurnishingChecked((prev) => [...prev, item]);
+      });
+    }
+  };
+
+  useEffect(() => {
+    resetSearchParams();
+    getFurnishings();
+  }, []);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -190,7 +279,7 @@ export default function Filter({
             <div className={styles['sub-header']}>Deposit</div>
           </div>
           <div className="flex justify-between items-center mb-[20px]">
-            <div className="text-g5 font-normal">View rooms without deposit</div>
+            <div className="font-normal text-g5">View rooms without deposit</div>
             <Toggle className="ml-2" register={register('depositToggle')} />
           </div>
           {!toggleDeposit && (
@@ -199,8 +288,20 @@ export default function Filter({
                 <div className="text-g5 text-[12px] font-normal">Min 0 ￦ - Max 500,000,000 ￦</div>
               </div>
               <div className="grid grid-flow-row gap-[8px]">
-                <Input placeholder="Min" type="number" register={register('depositMin')} />
-                <Input placeholder="Max" type="number" register={register('depositMax')} />
+                <Input
+                  placeholder="Min"
+                  type="tel"
+                  register={register('depositMin')}
+                  maxLength={9}
+                  fixedWord={watch('depositMin')}
+                />
+                <Input
+                  placeholder="Max"
+                  type="tel"
+                  register={register('depositMax')}
+                  maxLength={9}
+                  fixedWord={watch('depositMax')}
+                />
               </div>
             </>
           )}
@@ -212,7 +313,7 @@ export default function Filter({
             <div className={styles['sub-header']}>Month rent</div>
           </div>
           <div className="flex justify-between items-center mb-[20px]">
-            <div className="text-g5 font-normal">Include maintenance fee</div>
+            <div className="font-normal text-g5">Include maintenance fee</div>
             <Toggle className="ml-2" register={register('monthToggle')} />
           </div>
           {!toggleMonthRent && (
@@ -221,8 +322,20 @@ export default function Filter({
                 <div className="text-g5 text-[12px] font-normal">Min 0 ￦ - Max 20,000,000 ￦ </div>
               </div>
               <div className="grid grid-flow-row gap-[8px]">
-                <Input placeholder="Min" type="number" register={register('monthMin')} />
-                <Input placeholder="Max" type="number" register={register('monthMax')} />
+                <Input
+                  placeholder="Min"
+                  type="tel"
+                  register={register('monthMin')}
+                  maxLength={8}
+                  fixedWord={watch('monthMin')}
+                />
+                <Input
+                  placeholder="Max"
+                  type="tel"
+                  register={register('monthMax')}
+                  maxLength={8}
+                  fixedWord={watch('monthMax')}
+                />
               </div>
             </>
           )}
@@ -236,7 +349,7 @@ export default function Filter({
             <div className={styles['sub-header']}>Date available</div>
           </div>
           <div className="flex justify-between items-center mb-[20px]">
-            <div className="text-g5 font-normal">View rooms available now</div>
+            <div className="font-normal text-g5">View rooms available now</div>
             <Toggle className="ml-2" register={register('dateAvailableToggle')} />
           </div>
           {!dateAvailableToggle && (
@@ -254,13 +367,14 @@ export default function Filter({
             <div className={styles['sub-header']}>Type of housing</div>
           </div>
           <div className="grid grid-cols-2 gap-[8px] mt-[12px]">
-            {TYPE_OF_HOUSING.map((item) => {
+            {ROOM_TYPE_OPTIONS.map((item) => {
               return (
                 <Checkbox
                   type="outlined"
                   label={item.label}
                   register={register(item.value)}
                   checked={watch(item.value)}
+                  onChange={(e) => handleHousingCheck(item.value, e)}
                   key={item.value}
                 />
               );
@@ -274,17 +388,19 @@ export default function Filter({
           <div className={styles['sub-header']}>Furnishing</div>
         </div>
         <div className="grid grid-cols-2 gap-[8px] mt-[12px] mb-[166px]">
-          {FURNISHING.map((item) => {
-            return (
-              <Checkbox
-                type="outlined"
-                label={item.label}
-                register={register(item.value)}
-                checked={watch(item.value)}
-                key={item.value}
-              />
-            );
-          })}
+          {furnishings &&
+            furnishings.map((item) => {
+              return (
+                <Checkbox
+                  type="outlined"
+                  label={item.label}
+                  register={register(`${item.value}`)}
+                  checked={watch(`${item.value}`)}
+                  onChange={(e) => handleFurnishingCheck(item.value, e)}
+                  key={item.value}
+                />
+              );
+            })}
         </div>
         <div className="mt-[83px] fixed bottom-[0px] w-full overflow-x-hidden left-[50%] translate-x-[-50%] px-[20px] max-w-max">
           <div className="w-full">
@@ -296,7 +412,7 @@ export default function Filter({
               </div>
               <div className="w-[70%]">
                 <Button type="submit" size="lg">
-                  Apply {`(${roomsLength} Rooms)`}
+                  Apply {`(${count} Rooms)`}
                 </Button>
               </div>
             </div>

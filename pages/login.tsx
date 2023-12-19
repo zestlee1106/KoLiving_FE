@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import type { GetStaticPropsContext } from 'next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
 import { FieldError, useForm } from 'react-hook-form';
-import { useRouter } from 'next/router';
-import { LoginLayout, Link, CustomImage, Chip, Button, Input, Space } from '@/components/index.tsx';
+import { LoginLayout, Link, CustomImage, Button, Input, Space } from '@/components/index.tsx';
 import { isRequired, isValidEmail, isValidPassword } from '@/utils/validCheck.ts';
+import { signIn } from 'next-auth/react';
+import { getProfile } from '@/api/userInfo';
+import useUserInfo from '@/hooks/useUserInfo.ts';
+import { useRouter } from 'next/router';
 
 export const getStaticProps = async ({ locale }: GetStaticPropsContext) => ({
   props: {
@@ -14,19 +17,49 @@ export const getStaticProps = async ({ locale }: GetStaticPropsContext) => ({
 });
 
 export default function Login() {
-  const router = useRouter();
-  const doLogin = () => {
-    // 상세 페이지로 이동
-    router.push('/main');
-  };
   const { t } = useTranslation('common');
+  const { setUserInfoData, userInfoState } = useUserInfo();
   const {
+    handleSubmit,
     register,
     formState: { errors },
+    watch,
+    setError,
   } = useForm({ mode: 'onChange' });
 
+  const email = watch('email');
+  const password = watch('password');
+
+  const selectProfile = async () => {
+    try {
+      const data = await getProfile();
+      if (data != null) {
+        setUserInfoData(data);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const router = useRouter();
+  const onSubmit = async () => {
+    const data = await signIn('email-password-credential', {
+      email,
+      password,
+      redirect: false,
+    });
+    if (data?.status !== 200) {
+      setError('password', { type: 'validate', message: 'Invalid email or password' });
+      return;
+    }
+    await selectProfile();
+    router.push('/');
+  };
+
+  const isDisabledButton = !email || !password || !isValidEmail(email) || !isValidPassword(password);
+
   return (
-    <div className="font-pretendard w-full">
+    <div className="w-full font-pretendard">
       <div className="relative h-[422px] mb-7 w-[calc(100%+40px)] -left-[20px]">
         <CustomImage
           src="/images/thumb.png"
@@ -38,8 +71,8 @@ export default function Login() {
         />
       </div>
       <div className="m-[auto]">
-        <div className="font-semibold text-2xl text-G6 font-poppins mb-4">{t('welcome')}</div>
-        <form>
+        <div className="mb-4 text-2xl font-semibold text-G6 font-poppins">{t('welcome')}</div>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-2">
             <Input
               type="email"
@@ -70,7 +103,7 @@ export default function Login() {
               {t('resetPwd')}
             </Link>
           </div>
-          <Button onClick={doLogin} disabled={false} size="lg">
+          <Button disabled={isDisabledButton} size="lg" type="submit">
             Login
           </Button>
           <div className="flex items-center justify-center mt-[9px]">
@@ -79,7 +112,6 @@ export default function Login() {
               {t('signup')}
             </Link>
           </div>
-          {/* <Chip label="테스트" onDelete={console.log} clicked /> */}
         </form>
       </div>
     </div>

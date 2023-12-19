@@ -22,6 +22,29 @@ export const getStaticProps = async ({ locale }: GetStaticPropsContext) => ({
   },
 });
 
+const CheckMailModal = ({ email }: { email: string }) => {
+  const resend = async () => {
+    await postSignup(email);
+  };
+
+  return (
+    <>
+      <h2>Check Your Mail Box</h2>
+      <p
+        className="text-g5 text-[16px] mt-[4px]"
+        dangerouslySetInnerHTML={{
+          __html: `A verification has just been sent to<br/> <b class="font-semibold">${email}<b>`,
+        }}
+      />
+      <div className="mt-[20px]">
+        <Button size="lg" onClick={resend} color="noBg">
+          Resend link
+        </Button>
+      </div>
+    </>
+  );
+};
+
 export default function SignUp() {
   const signUpTranslation = useTranslation('signup');
   const commonTranslation = useTranslation('common');
@@ -34,7 +57,7 @@ export default function SignUp() {
   } = useForm({ mode: 'onChange' });
 
   const { setSignUpData, signUpState } = useSignUp();
-  const { openModal } = useModal();
+  const { openModal, closeModal } = useModal();
 
   const handleAllCheck = (checked: boolean) => {
     if (!checked) {
@@ -102,11 +125,10 @@ export default function SignUp() {
       await postSignup(data.email);
       openModal({
         props: {
-          title: 'Check Your Mail Box',
-          content: `A verification has just been sent to<br/> <b>user@koliving.com<b>`,
-          buttonType: 'outline',
-          buttonName: 'Resend link',
+          custom: true,
+          hasButton: false,
         },
+        children: <CheckMailModal email={data.email} />,
       });
     } catch (e) {
       console.error(e);
@@ -208,10 +230,10 @@ export default function SignUp() {
                 {commonTranslation.t('next')}
               </Button>
             </div>
-            <div className="flex mb-[6px] justify-center">
+            <div className="flex mb-[6px] justify-center mr-[41px]">
               <p className="text-[14px]">{signUpTranslation.t('checkMember')}</p>
               <button
-                className="text-[16px] text-r1 ml-1 underline"
+                className="text-[16px] text-r1 ml-1 underline font-semibold"
                 onClick={() => {
                   Router.push('/login');
                 }}

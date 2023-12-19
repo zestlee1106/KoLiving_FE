@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+/* eslint-disable react-hooks/rules-of-hooks */
+import React, { useState } from 'react';
 import ResetPasswordLayout from '@/components/layouts/ResetPasswordLayout.tsx';
 import { Link, Stepper, Button, ModalBox, Input, Space, Typography } from '@/components/index.tsx';
 import { FieldError, useForm as UseForm } from 'react-hook-form';
@@ -6,6 +7,7 @@ import { isValidEmail } from '@/utils/validCheck.ts';
 import { useTranslation as UseTranslation } from 'next-i18next';
 import type { GetStaticPropsContext } from 'next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { postResetPassword } from '@/api/signup';
 
 export const getStaticProps = async ({ locale }: GetStaticPropsContext) => ({
   props: {
@@ -25,9 +27,16 @@ export default function step1() {
     formState: { errors },
   } = UseForm({ mode: 'onChange' });
 
-  const fnAuthEmail = () => {
-    console.log('error is ??', errors);
-    return !errors.email?.message && setAuthEmail(true);
+  const fnAuthEmail = async () => {
+    if (!errors.email?.message) {
+      setAuthEmail(true);
+      await postResetPassword(watch('email'));
+    }
+  };
+
+  const handleResendLink = () => {
+    setAuthEmail(false);
+    fnAuthEmail();
   };
 
   return (
@@ -68,6 +77,7 @@ export default function step1() {
           buttonType="default"
           buttonName="Resend link"
           hasCloseButton
+          handleClose={handleResendLink}
           overlayClose
         />
       )}

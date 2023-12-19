@@ -1,22 +1,25 @@
 import React from 'react';
 import LogoBlack from '@/public/icons/logo-black.svg';
 import LogoWhite from '@/public/icons/logo-white.svg';
-// import Plus from '@/public/icons/plus.svg';
-import Plus from '@/public/icons/plus2.svg';
+import Plus from '@/public/icons/plus.svg';
 import Back from '@/public/icons/back.svg';
 import Close from '@/public/icons/close.svg';
 import Pencil from '@/public/icons/pencil.svg';
+import Delete from '@/public/icons/recycleBin.svg';
 import styles from './Header.module.scss';
 import Space from '../Space.tsx';
 
 interface HeaderProps {
   type?: 'logo' | 'back' | 'title';
   title?: string;
-  right?: 'plus' | 'close' | 'pencil';
+  right?: 'plus' | 'close' | 'pencil' | 'delete';
   logoColor?: 'black' | 'white';
   bgColor?: 'white' | 'transparent';
   hasButton?: boolean;
+  titleStyle?: string;
+  titleCenter?: boolean;
   handleButtonClick?: () => void;
+  handleSecondButtonClick?: () => void;
 }
 
 const LOGOS = {
@@ -27,11 +30,20 @@ const LOGOS = {
 const renderHandler = (type: string | undefined, color: string) => {
   switch (type) {
     case 'plus':
-      return <Plus className="stroke-r1" />;
+      return (
+        <div className="w-[65px] h-[24px] rounded-[200px] border-r1 flex border justify-center items-center gap-[4px]">
+          <div>
+            <Plus />
+          </div>
+          <div className="text-[14px] font-semibold text-r1">Add</div>
+        </div>
+      );
     case 'close':
       return <Close width={24} height={24} className={`${color} stroke-[2]`} />;
     case 'pencil':
       return <Pencil className={`${color} stroke-[2]`} />;
+    case 'delete':
+      return <Delete />;
     default:
       return null;
   }
@@ -44,7 +56,10 @@ export default function Header({
   logoColor = 'black',
   bgColor = 'white',
   handleButtonClick,
+  handleSecondButtonClick,
   hasButton = true,
+  titleStyle,
+  titleCenter,
 }: HeaderProps) {
   const strokeColor = bgColor === 'white' ? 'stroke-g7' : 'stroke-g0';
   const Logo = LOGOS[`logo-${logoColor}`];
@@ -56,7 +71,9 @@ export default function Header({
   };
 
   return (
-    <div className={`${backGroundColor} w-full h-[54px] text-center z-[999] fixed max-w-max ${styles.container}`}>
+    <div
+      className={`${backGroundColor} w-full h-[54px] text-center z-[999] fixed max-w-max ${styles.container} border-b-[1px]`}
+    >
       {type === 'logo' && (
         <div className="flex w-full">
           <div className={styles.logo}>{Logo()}</div>
@@ -74,13 +91,18 @@ export default function Header({
               <Space />
               <div className="font-pretendard font-medium text-[18px]">{title}</div>
               <Space />
-              <button onClick={handleClick}>{renderHandler(right, strokeColor)}</button>
+              {right === 'delete' ? (
+                <Delete onClick={handleSecondButtonClick} />
+              ) : (
+                <button onClick={handleClick}>{renderHandler(right, strokeColor)}</button>
+              )}
             </div>
           </div>
         </div>
       )}
       {type === 'title' && (
-        <div className="flex w-full">
+        <div className={`flex w-full ${titleStyle}`}>
+          {titleCenter && <Space />}
           <div className="text-g7 text-[18px] mt-[12.5px]">{title}</div>
           <Space />
           <div className="pt-[13px]">
