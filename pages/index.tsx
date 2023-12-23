@@ -120,6 +120,9 @@ function Home() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (page === 0) {
+        return;
+      }
       const data = await getRooms({ ...searchParams, page });
       setRooms((prevRooms) => [...prevRooms, ...(data?.content || [])]);
       setTotalElements(data?.totalElements || 0);
@@ -226,6 +229,7 @@ function Home() {
                 onDelete={() => handleOptionRemove?.(filter, index)}
                 onChipClick={() => handleChipClick?.(index)}
                 clicked={filter.selected}
+                fontWeight="medium"
               />
             );
           })}

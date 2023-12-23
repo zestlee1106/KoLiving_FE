@@ -45,12 +45,15 @@ const UserInfo = ({ userInfo }: UserInfoProps) => {
 
   return (
     <div className="flex">
-      <img
-        className="rounded-[40px] w-[40px] h-[40px]"
-        src={userInfo.imageUrl || '/images/thumb.png'}
-        alt="user"
-        onClick={handleUserClick}
-      />
+      <div className="relative inline-block w-[32px] h-[32px] ">
+        <img
+          className="object-cover object-center w-full h-full rounded-[32px]"
+          src={userInfo.imageUrl || '/images/thumb.png'}
+          alt="user"
+          onClick={handleUserClick}
+        />
+        <div className="absolute w-full h-full rounded-[50%] border-g3 border-solid top-0 left-0 box-border border-[1px]" />
+      </div>
       <div className="ml-[12px]">
         <div className="text-[16px] text-g7 font-semibold">{userInfo.firstName}</div>
         <div className="text-a2 text-[12px]">
@@ -114,10 +117,10 @@ const Footer = ({ room, isLikedRooms }: CardProps) => {
         onClick={handleLikeClick}
       />
       <div className="text-g6 text-[12px]">
-        {room.location.name}, {room.location.upperLocation?.name}
+        {room.location.name}-dong, {room.location.upperLocation?.name}-gu
       </div>
       <div className="font-poppins text-[20px] font-semibold text-g7 flex items-center">
-        <div>&#8361;{formatPrice(room.deposit.amount)}&nbsp;</div>
+        <div>&#8361;{formatPrice(room.monthlyRent.amount)}&nbsp;</div>
         <span className="font-pretendard text-[14px] font-medium mr-[12px]">/ month </span>
         <span className="font-pretendard text-[14px] text-r1 font-[500] bg-g1 px-[4px] py-[2px] rounded-[2px]">
           {room.deposit ? 'Deposit required' : ''}
@@ -132,7 +135,9 @@ const Footer = ({ room, isLikedRooms }: CardProps) => {
         {room.roomInfo.roommates} housemates in total
       </div>
       <hr />
-      <p className="pt-[10px] font-medium text-[12px] text-a2">Available {formatDate(room.availableDate)}</p>
+      <p className="pt-[10px] font-medium text-[12px] text-a2">
+        Available {room.available === true ? 'Now' : formatDate(room.availableDate)}
+      </p>
     </div>
   );
 };

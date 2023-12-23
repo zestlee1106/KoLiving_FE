@@ -362,11 +362,11 @@ export default function RoomDetail() {
               <div className="font-pretendard text-[14px] text-g6 py-[20px]">
                 <div className="flex items-center">
                   <Pin className="mr-[12px]" />
-                  {room.location.name}, {room.location.upperLocation?.name}
+                  {room.location.name}-dong, {room.location.upperLocation?.name}-gu
                 </div>
                 <div className="flex items-center">
                   <Calendar className="mr-[12px]" />
-                  From {formatDate(room.availableDate)}
+                  {room.available === true ? 'Available Now' : `From ${formatDate(room.availableDate)}`}
                 </div>
               </div>
               <hr />
@@ -433,7 +433,7 @@ export default function RoomDetail() {
             <div className="fixed bottom-0 w-full overflow-x-hidden left-[50%] translate-x-[-50%] max-w-max bg-g0 h-[71px] flex justify-center border-t-[1px] border-g2">
               <div className="flex items-center">
                 <Like className="stroke-g7 stroke-[1.5px] m-[8px]" />
-                <span className="text-[20px] font-semibold">&#8361; {formatPrice(room.deposit.amount)}&nbsp;</span>
+                <span className="text-[20px] font-semibold">&#8361; {formatPrice(room.monthlyRent.amount)}&nbsp;</span>
                 <span>/ month</span>
                 <div className="h-[40px] font-medium text-[14px] ml-[12px]">
                   <Button height="40px" onClick={handleContactPopup}>
