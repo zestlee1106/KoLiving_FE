@@ -11,9 +11,10 @@ import { useRouter } from 'next/router';
 import { Chip, Typography, Nav } from '@/components/index.tsx';
 import useModal from '@/hooks/useModal.ts';
 import Filter from '@/components/Filter/Filter.tsx';
-import { getRooms } from '@/api/room';
+import { Location, getLocations, getRooms } from '@/api/room';
 import isEmpty from 'lodash-es/isEmpty';
 import { getLikedRooms } from '@/api/userInfo';
+import { Option } from '@/components/Select/Select';
 
 type HomeProps = NextPage & {
   getLayout: (page: React.ReactElement, ctx: NextPageContext) => React.ReactNode;
@@ -43,7 +44,7 @@ function Home() {
   const [clickedChip, setClickedChip] = useState(-1);
   const router = useRouter();
   const { openModal, closeModal } = useModal();
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
   const [searchParams, setSearchParams] = useState<Record<string, string>>({});
   const [likedRoom, setLikedRoom] = useState([]);
@@ -93,6 +94,10 @@ function Home() {
     setSearchParams(childData);
     setRooms([]);
   };
+
+  const [gus, setGus] = useState<Option[]>([]);
+  const [dongs, setDongs] = useState<Option[]>([]);
+
   const openFilterPopup = () => {
     openModal({
       props: {
@@ -105,6 +110,47 @@ function Home() {
         <Filter closeModal={closeModal} getChildData={getChildData} focus={clickedChip} initialData={searchParams} />
       ),
     });
+  };
+
+  const fetchLocations = async () => {
+    try {
+      if (sessionStorage.getItem('gu') && sessionStorage.getItem('dong')) {
+        return;
+      }
+
+      const data = await getLocations();
+
+      if (!data) {
+        return;
+      }
+
+      const gusData = data
+        .filter((location) => location.locationType === 'GU')
+        .map((location) => {
+          return {
+            id: location.id,
+            value: location.id,
+            label: `${location.name}-gu`,
+          };
+        });
+      setGus(gusData);
+      sessionStorage.setItem('gu', JSON.stringify(gusData));
+
+      const dongsData = data
+        .filter((location) => location.locationType === 'DONG')
+        .map((location) => {
+          return {
+            id: location.id,
+            value: location.id,
+            label: `${location.name}-dong`,
+            upperLocationId: location.upperLocation.id,
+          };
+        });
+      setDongs(dongsData);
+      sessionStorage.setItem('dong', JSON.stringify(dongsData));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const options = {
@@ -120,7 +166,7 @@ function Home() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (page === 0) {
+      if (page === 1) {
         return;
       }
       const data = await getRooms({ ...searchParams, page });
@@ -136,6 +182,8 @@ function Home() {
     (async () => {
       const resultRooms = await selectRooms();
       const resultLikedRooms = (await getLikedRooms(page))?.content;
+      await fetchLocations();
+
       const roomIds = [];
       if (resultRooms) {
         for (const room of resultRooms) {

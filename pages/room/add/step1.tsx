@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import MultiButton from '@/components/MultiButton/MultiButton';
 import { useRouter } from 'next/router';
 import { formatDateForAPI } from '@/utils/transform';
-import { fetchFurnishings } from '@/api/room';
+import { fetchFurnishings, getLocations } from '@/api/room';
 import styles from './add.module.scss';
 
 interface GuDong {
@@ -46,10 +46,16 @@ const INCLUDE_OPTIONS = [
   },
 ];
 
+interface DongOption extends Option {
+  upperLocationId: number;
+}
+
 export default function AddRoom() {
   const { register, handleSubmit, watch, setValue } = useForm({ mode: 'onChange' });
   const [selectedLocations, setSelectedLocations] = useState<GuDong[]>([]);
   const router = useRouter();
+  const [gus, setGus] = useState<Option[]>([]);
+  const [dongs, setDongs] = useState<DongOption[]>([]);
 
   const onSubmit: SubmitHandler<FieldValues> = (data) => {
     const params = {
@@ -106,49 +112,8 @@ export default function AddRoom() {
       return [];
     }
 
-    return DongList.filter((v) => v.gu === gu.value);
-  }, [gu]);
-
-  useEffect(() => {
-    if (!dong) return;
-
-    if (selectedLocations.length === 5) {
-      toast.error('You can select up to five');
-      return;
-    }
-
-    const isExist = selectedLocations.some((item) => item.dong.value === dong.value);
-
-    if (isExist) {
-      toast.error('Already selected');
-      return;
-    }
-
-    setSelectedLocations((prevSelectedLocations) => {
-      prevSelectedLocations.push({
-        gu: {
-          ...gu,
-        },
-        dong: {
-          ...dong,
-        },
-      });
-
-      return [...prevSelectedLocations];
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dong]);
-
-  // 옵션 제거 시 실행될 함수
-  const removeLocation = (option: string | number) => {
-    setSelectedLocations((prevSelectedLocations) =>
-      prevSelectedLocations.filter((item) => {
-        const value = String(option);
-
-        return item.dong.value !== value;
-      })
-    );
-  };
+    return dongs.filter((v) => v.upperLocationId === gu.value);
+  }, [gu, dongs]);
 
   useEffect(() => {
     if (monthPrice > 20000000) {
@@ -180,6 +145,60 @@ export default function AddRoom() {
     }
   }, [noDeposit, setValue]);
 
+  const fetchLocations = async () => {
+    try {
+      if (sessionStorage.getItem('gu') && sessionStorage.getItem('dong')) {
+        return;
+      }
+
+      const data = await getLocations();
+
+      if (!data) {
+        return;
+      }
+
+      const gusData = data
+        .filter((location) => location.locationType === 'GU')
+        .map((location) => {
+          return {
+            id: location.id,
+            value: location.id,
+            label: `${location.name}-gu`,
+          };
+        });
+      setGus(gusData);
+      sessionStorage.setItem('gu', JSON.stringify(gusData));
+
+      const dongsData = data
+        .filter((location) => location.locationType === 'DONG')
+        .map((location) => {
+          return {
+            id: location.id,
+            value: location.id,
+            label: `${location.name}-dong`,
+            upperLocationId: location.upperLocation.id,
+          };
+        });
+      setDongs(dongsData);
+      sessionStorage.setItem('dong', JSON.stringify(dongsData));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      await fetchLocations();
+      if (sessionStorage.getItem('gu')) {
+        setGus(JSON.parse(sessionStorage.getItem('gu') || '[]'));
+      }
+
+      if (sessionStorage.getItem('dong')) {
+        setDongs(JSON.parse(sessionStorage.getItem('dong') || '[]'));
+      }
+    })();
+  }, []);
+
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <Stepper step={1} totalStep={3} />
@@ -193,24 +212,9 @@ export default function AddRoom() {
           <div className={styles['sub-header']}>Location</div>
         </div>
         <div className="grid grid-flow-row gap-[8px]">
-          <Select options={GuList} register={register('gu')} placeholder="Gu" />
+          <Select options={gus} register={register('gu')} placeholder="Gu" />
           <Select options={filteredDongList} register={register('dong')} placeholder="Dong" disabled={!watch('gu')} />
         </div>
-        {/* 선택된 옵션들에 대해 동적으로 Chip 컴포넌트 렌더링 */}
-        {selectedLocations.length > 0 && (
-          <div className="mt-[16px] overflow-x-auto whitespace-nowrap">
-            {selectedLocations.map((option) => {
-              return (
-                <Chip
-                  key={option.dong.value}
-                  label={`${option.gu.label}, ${option.dong.label}`}
-                  onDelete={() => removeLocation?.(option.dong.value)}
-                  clicked
-                />
-              );
-            })}
-          </div>
-        )}
       </div>
 
       <hr />

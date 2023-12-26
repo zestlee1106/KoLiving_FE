@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import NoLiked from '@/public/icons/noLiked.svg';
 import useModal from '@/hooks/useModal';
 import DefaultLayout from '@/components/layouts/DefaultLayout';
-import { Nav, Typography, Chip } from '@/components/index.tsx';
+import { Nav, Typography, Chip, Select } from '@/components/index.tsx';
 import { useRouter } from 'next/router';
 import { RoomSearch } from '@/public/types/room';
 import { getLikedRooms } from '@/api/userInfo';
@@ -180,41 +180,15 @@ export default function Liked({ roomInfo }: MyPostingProps) {
     };
     return (
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }} className="mb-[8px]">
-          <FilterImg
-            className="stroke-g7 stroke-[2] cursor-pointer "
-            onClick={openFilterPopup}
-            style={{ alignSelf: 'flex-start' }}
-          />
-          {filters.map((label, index) => {
-            return (
-              <div style={{ marginLeft: index === 0 ? '4px' : '0', marginRight: '-4px' }} key={index}>
-                <Chip
-                  key={`${label}-${index}`}
-                  label={label}
-                  onDelete={() => handleOptionRemove?.(label, index)}
-                  onChipClick={() => handleChipClick?.(label)}
-                  clicked={handlePropsClick?.(label, index)}
-                />
-              </div>
-            );
-          })}
+        <div className="font-semibold pt-[16px]">
+          You have liked <span className="text-r1">{totalElements} rooms</span>
         </div>
-        <Typography variant="body" customClassName="text-left font-bold text-[16px] text-g7">
-          There are <span className="text-r1">{`${totalElements} rooms`}</span> in total!
-        </Typography>
         {rooms.map((room, idx) => (
           <div className={`mt-[20px] ${rooms.length - 1 === idx ? 'mb-[83px]' : ''}`} key={`room-${idx}`}>
             <RoomCard room={room} onClick={() => handleCardClick(room.id)} isLikedRooms />
           </div>
         ))}
-        <div className="mt-[83px] fixed bottom-[-15px] w-full overflow-x-hidden left-[50%] translate-x-[-50%] max-w-max">
-          <div className="w-full">
-            <div className="mb-[13px] space-x-[8px] max-w-max">
-              <Nav />
-            </div>
-          </div>
-        </div>
+
         <div ref={target} />
       </div>
     );
@@ -223,18 +197,18 @@ export default function Liked({ roomInfo }: MyPostingProps) {
 }
 
 Liked.getLayout = function getLayout(page: React.ReactElement) {
-  const handleGoBack = () => {
-    window.history.back();
-  };
   return (
-    <DefaultLayout
-      type="title"
-      title="Liked"
-      handleButtonClick={handleGoBack}
-      titleStyle="pt-[14.5px] font-pretendard font-medium text-[18px]"
-      titleCenter
-    >
-      {page}
-    </DefaultLayout>
+    <>
+      <DefaultLayout type="title" title="Liked" titleCenter>
+        {page}
+      </DefaultLayout>
+      <div className="mt-[83px] fixed bottom-[-15px] w-full overflow-x-hidden left-[50%] translate-x-[-50%] max-w-max z-20 border-t-[1px] border-g2">
+        <div className="w-full">
+          <div className="mb-[13px] space-x-[8px] max-w-max">
+            <Nav />
+          </div>
+        </div>
+      </div>
+    </>
   );
 };
